@@ -195,8 +195,8 @@ class game():
 
     def next_map(self):
 
-        self.last_position_x[self.current_map] = self.player_position_x
-        self.last_position_y[self.current_map] = self.player_position_y
+        self.last_position_x[self.current_map] = int(self.player_position_x)
+        self.last_position_y[self.current_map] = int(self.player_position_y)
     
         self.current_map += 1
         
