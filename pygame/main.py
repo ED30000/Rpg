@@ -6,6 +6,8 @@ from settings import *
 from assets import *
 from map import *
 
+#Test
+
 class game():
     def __init__(self):
         pg.init()
@@ -26,6 +28,7 @@ class game():
         self.font = pg.font.Font('Arial.ttf', 32)
 
         self.combat_state = False
+        self.dialoge_state = True
 
         self.current_map = 0
 
@@ -67,8 +70,8 @@ class game():
         for row in map:
             x = 0
             for tile in row:
-                if tile == 0:
-                    Empty(self, x, y)
+                if tile == '1':
+                    Villager(self, x, y)
                 if tile == '2':
                     Goblin(self, x, y)
 
@@ -220,10 +223,11 @@ class game():
         
     def house_map(self):
         self.create_tilemap(house_list)
+        self.spawn_npc(house_spawn_list)
         Player(self, 64, 64)
 
-        self.last_position_x = self.player_position_x
-        self.last_position_y = self.player_position_y
+        self.last_position_x[self.current_map] = self.player_position_x
+        self.last_position_y[self.current_map] = self.player_position_y
 
         self.player_position_x = 0
         self.player_position_y = 0
@@ -231,11 +235,14 @@ class game():
     def house_map_back(self):
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
-        Player(self, self.last_position_x + player_next_spawns_x[self.current_map], self.last_position_y + player_next_spawns_y[self.current_map] + 16)
+        Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
 
-        self.player_position_x = self.last_position_x
-        self.player_position_y = self.last_position_y
+        self.player_position_x = self.last_position_x[self.current_map]
+        self.player_position_y = self.last_position_y[self.current_map]
         
+    def dialoge(self):
+        pass
+
     def combat(self, sprite):
 
         attack_button = Button(10, 50, 100, 50, BLUE, BLACK, 'Attack', 32)

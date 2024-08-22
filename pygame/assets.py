@@ -185,6 +185,157 @@ class Player(pg.sprite.Sprite):
                 if self.animation_loop >= 3:
                     self.animation_loop = 1
 
+class Villager(pg.sprite.Sprite):
+    def __init__(self, game, x, y):
+        super().__init__()
+        self.game = game
+        self._layer = GROUND_LAYER
+        self.groups = self.game.all_sprites, self.game.enemy_sprites
+        pg.sprite.Sprite.__init__(self, self.groups)
+
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE
+        self.height = TILESIZE
+        self.big_width = 96
+        self.big_height = 128
+
+        self.change_x = 0
+        self.change_y = 0
+        
+        self.facing = random.choice(['left', 'right', 'up', 'down'])
+        self.max_travel = random.randint(16, 64)
+        self.animation_loop = 0
+        self.movement_loop = 0
+
+        self.image = self.game.spritesheet.get_sprite(32, 64, self.width, self.height)
+        
+        self.down_animation = [self.game.spritesheet.get_sprite(48, 64, self.width, self.height),
+                        self.game.spritesheet.get_sprite(64, 64, self.width, self.height),
+                        self.game.spritesheet.get_sprite(80, 64, self.width, self.height)]
+
+        self.right_animation = [self.game.spritesheet.get_sprite(48, 80, self.width, self.height),
+                        self.game.spritesheet.get_sprite(64, 80, self.width, self.height),
+                        self.game.spritesheet.get_sprite(80, 80, self.width, self.height)]
+
+        self.left_animation = [self.game.spritesheet.get_sprite(48, 96, self.width, self.height),
+                        self.game.spritesheet.get_sprite(64, 96, self.width, self.height),
+                        self.game.spritesheet.get_sprite(80, 96, self.width, self.height)]
+
+        self.up_animation = [self.game.spritesheet.get_sprite(48, 112, self.width, self.height),
+                        self.game.spritesheet.get_sprite(64, 112, self.width, self.height),
+                        self.game.spritesheet.get_sprite(80, 112, self.width, self.height)]
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+    def update(self):
+        
+        self.movement()
+
+        self.collide_blocks(self.facing)
+        self.collide_player()
+        self.animate()
+
+        self.rect.x += self.change_x
+        self.collide_blocks('x')
+        self.rect.y += self.change_y
+        self.collide_blocks('y')
+
+        self.change_x = 0
+        self.change_y = 0
+
+    def movement(self):
+
+        if self.facing == 'left':
+            self.change_x -= ENEMY_SPEED
+            self.movement_loop -= 1
+            if self.movement_loop <= -self.max_travel:
+                self.facing = 'right'
+            
+        if self.facing == 'right':
+            self.change_x += ENEMY_SPEED
+            self.movement_loop += 1
+            if self.movement_loop >= self.max_travel:
+                self.facing = 'left'
+
+        if self.facing == 'up':
+            self.change_y -= ENEMY_SPEED
+            self.movement_loop -= 1
+            if self.movement_loop <= -self.max_travel:
+                self.facing = 'down'
+            
+        if self.facing == 'down':
+            self.change_y += ENEMY_SPEED
+            self.movement_loop += 1
+            if self.movement_loop >= self.max_travel:
+                self.facing = 'up'
+
+    def collide_blocks(self, direction):
+        if direction == 'x':
+            hits = pg.sprite.spritecollide(self, self.game.blocks, False)
+            if hits:
+                if self.change_x > 0:
+                    self.rect.x = hits[0].rect.left - self.rect.width
+                if self.change_x < 0:
+                    self.rect.x = hits[0].rect.right
+
+        if direction == 'y':
+            hits = pg.sprite.spritecollide(self, self.game.blocks, False)
+            if hits:
+                if self.change_y > 0:
+                    self.rect.y = hits[0].rect.top - self.rect. height
+                if self.change_y < 0:
+                    self.rect.y = hits[0].rect.bottom 
+
+    def collide_player(self):
+        hits = pg.sprite.spritecollide(self, self.game.player_sprites, False)
+        if hits:
+            pass
+            
+
+    def animate(self):
+        if self.facing == "left":
+            if self.change_x == 0:
+                self.image = self.game.spritesheet.get_sprite(32, 80, self.width, self.height)
+
+            else:
+                self.image = self.left_animation[math.floor(self.animation_loop)]
+                self.animation_loop += 0.1
+                if self.animation_loop >= 2:
+                    self.animation_loop = 0
+
+        if self.facing == "right":
+            if self.change_x == 0:
+                self.image = self.game.spritesheet.get_sprite(32, 80, self.width, self.height)
+
+            else:
+                self.image = self.right_animation[math.floor(self.animation_loop)]
+                self.animation_loop += 0.1
+                if self.animation_loop >= 2:
+                    self.animation_loop = 0
+
+        if self.facing == "up":
+            if self.change_y == 0:
+                self.image = self.game.spritesheet.get_sprite(32, 112, self.width, self.height)
+
+            else:
+                self.image = self.up_animation[math.floor(self.animation_loop)]
+                self.animation_loop += 0.1
+                if self.animation_loop >= 2:
+                    self.animation_loop = 0
+
+        if self.facing == "down":
+            if self.change_y == 0:
+                self.image = self.game.spritesheet.get_sprite(32, 112, self.width, self.height)
+
+            else:
+                self.image = self.down_animation[math.floor(self.animation_loop)]
+                self.animation_loop += 0.1
+                if self.animation_loop >= 2:
+                    self.animation_loop = 0
+
 class Goblin(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         super().__init__()
@@ -696,7 +847,7 @@ class Button:
         else:
             return False
 
-class Dialoge_box:
+class Dialoge_box(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         super().__init__()
         self.game = game
@@ -707,8 +858,8 @@ class Dialoge_box:
         self.x = x
         self.y = y
         
-        self.width = game.screen_x
-        self.health = 32
+        self.width = screen_x
+        self.height = 32
 
         self.image = self.game.spritesheet.get_sprite(0, 192, self.width, self.height)
 
