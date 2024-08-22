@@ -1,1 +1,0 @@
-villager_dialoge_1 = ['hello']
