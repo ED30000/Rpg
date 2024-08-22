@@ -20,8 +20,8 @@ class game():
         
         self.player_position_x = 0
         self.player_position_y = 0
-        self.last_position_x = 0
-        self.last_position_y = 0
+        self.last_position_x = [0, 0, 0, 0]
+        self.last_position_y = [0, 0, 0, 0]
 
         self.font = pg.font.Font('Arial.ttf', 32)
 
@@ -194,14 +194,15 @@ class game():
             dead = False
 
     def next_map(self):
+
+        self.last_position_x[self.current_map] = self.player_position_x
+        self.last_position_y[self.current_map] = self.player_position_y
+    
         self.current_map += 1
         
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
         Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
-        
-        self.last_position_x = self.player_position_x
-        self.last_position_y = self.player_position_y
 
         self.player_position_x = 0
         self.player_position_y = 0
@@ -212,10 +213,10 @@ class game():
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
         #Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
-        Player(self, self.last_position_x + player_next_spawns_x[self.current_map], self.last_position_y + player_next_spawns_y[self.current_map] + 16)
+        Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
         
-        self.player_position_x = self.last_position_x
-        self.player_position_y = self.last_position_y
+        self.player_position_x = self.last_position_x[self.current_map]
+        self.player_position_y = self.last_position_y[self.current_map]
         
     def house_map(self):
         self.create_tilemap(house_list)
