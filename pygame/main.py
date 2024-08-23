@@ -18,12 +18,10 @@ class game():
         self.running = True
 
         self.max_health = 200
-        self.inventory = []
-        
         self.player_position_x = 0
         self.player_position_y = 0
-        self.last_position_x = [0, 0, 0, 0]
-        self.last_position_y = [0, 0, 0, 0]
+        self.last_position_x = [0, 0, 0, 0, 0, 0]
+        self.last_position_y = [0, 0, 0, 0, 0, 0]
 
         self.font = pg.font.Font('Arial.ttf', 32)
 
@@ -61,6 +59,8 @@ class game():
                     Carpet(self, x, y)
                 if tile == '10':
                     House_Door_Back(self, x, y)
+                if tile == '11':
+                    House(self, x, y)
 
                 x += 1
             y += 1
@@ -82,6 +82,8 @@ class game():
         self.playing = True
 
         self.health = self.max_health
+        
+        self.inventory = []
 
         first_map = 0
         self.current_map = first_map
@@ -96,8 +98,8 @@ class game():
 
         self.create_tilemap(maps_list[first_map])
         Player(self, player_next_spawns_x[first_map], player_next_spawns_y[first_map])
-
-        print("creating tile map")
+        #self.create_tilemap(map4_list)
+        #print("creating tile map")
             
     def events(self):
 
@@ -213,40 +215,73 @@ class game():
     def previus_map(self):
         self.current_map -= 1
         
+        #self.player_position_x = self.last_position_x[self.current_map]
+        #self.player_position_y = self.last_position_y[self.current_map]
+
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
         #Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
         Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
         
-        self.player_position_x = self.last_position_x[self.current_map]
-        self.player_position_y = self.last_position_y[self.current_map]
+
         
     def house_map(self):
+        self.last_position_x[self.current_map] = int(self.player_position_x)
+        self.last_position_y[self.current_map] = int(self.player_position_y)
+        
         self.create_tilemap(house_list)
         self.spawn_npc(house_spawn_list)
-        Player(self, 64, 64)
-
-        self.last_position_x[self.current_map] = self.player_position_x
-        self.last_position_y[self.current_map] = self.player_position_y
+        Player(self, 48, 64)
 
         self.player_position_x = 0
         self.player_position_y = 0
         
     def house_map_back(self):
+        #self.player_position_x = self.last_position_x[self.current_map]
+        #self.player_position_y = self.last_position_y[self.current_map]
+
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
+        #Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
         Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
-
-        self.player_position_x = self.last_position_x[self.current_map]
-        self.player_position_y = self.last_position_y[self.current_map]
         
-    def dialoge(self):
-        pass
+        
+    def dialoge(self, sprite):
+        self.dialoge_state = True
+        
+        current_dialoge = 0
+
+        dialoge_box = Dialoge_box(self, 0, 128)
+        dialoge_text = Text(16, 128, 240, 16, BLUE, RED, str(sprite.dialoge_list[current_dialoge]), 12)
+
+        next_dialoge = UI_button(self, 240, 144, TILESIZE, TILESIZE, BLACK, '>', 32)
+        previus_dialoge = UI_button(self, 0, 144, TILESIZE, TILESIZE, BLACK, '<', 32)
+
+        while self.dialoge_state and self.running:
+            self.events()
+            self.screen.blit(dialoge_box.image, dialoge_box.rect)
+            self.screen.blit(dialoge_text.image, dialoge_text.rect)
+            self.screen.blit(previus_dialoge.image, previus_dialoge.rect)
+            self.screen.blit(next_dialoge.image, next_dialoge)
+            pg.display.update()
+            #print('working')
+
+            if next_dialoge.is_pressed(self.mouse_pos, self.mouse_pressed):
+                #print('prssed')
+                current_dialoge += 1
+                try:
+                    dialoge_text = Text(16, 128, 240, 16, BLUE, RED, str(sprite.dialoge_list[current_dialoge]), 12)
+                except IndexError:
+                    self.dialoge_state = False
+                    dialoge_box.kill()
+                    previus_dialoge.kill()
+                    next_dialoge.kill()
 
     def combat(self, sprite):
 
         attack_button = Button(10, 50, 100, 50, BLUE, BLACK, 'Attack', 32)
 
+        health = Text(0, 0, 32, 16, BLUE, RED, str(self.health), 16)
         enemy_health = Text(144, 0, 32, 16, BLUE, RED, str(sprite.health), 16)
 
         while self.combat_state and self.running:
@@ -255,6 +290,7 @@ class game():
             self.screen.blit(sprite.big_image, sprite.big_image_position)
             self.screen.blit(attack_button.image, attack_button.rect)
             self.screen.blit(enemy_health.image, enemy_health.rect)
+            self.screen.blit(health.image, health.rect)
             pg.display.update()
 
             if attack_button.is_pressed(self.mouse_pos, self.mouse_pressed):
@@ -263,6 +299,8 @@ class game():
                 sprite.health -= self.damage
 
                 sprite.attack()
+
+                health = Text(0, 0, 32, 16, BLUE, RED, str(self.health), 16)
                 enemy_health = Text(144, 0, 32, 16, BLUE, RED, str(sprite.health), 16)
 
             if sprite.health <= 0.0:
