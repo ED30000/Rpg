@@ -61,6 +61,16 @@ class game():
                     House_Door_Back(self, x, y)
                 if tile == '11':
                     House(self, x, y)
+                if tile == '12':
+                    Grass_door(self, x, y)
+                if tile == '13':
+                    Grass_door_back(self, x, y)
+                if tile == '14':
+                    Rock_wall(self, x, y)
+                if tile == '15':
+                    Rock_door(self, x, y)
+                if tile == '16':
+                    Rock_door_back(self, x, y)
 
                 x += 1
             y += 1
@@ -100,7 +110,7 @@ class game():
         Player(self, player_next_spawns_x[first_map], player_next_spawns_y[first_map])
         #self.create_tilemap(map4_list)
         #print("creating tile map")
-            
+
     def events(self):
 
         self.mouse_pressed = False
@@ -140,9 +150,9 @@ class game():
             self.events()
             self.update()
             self.draw()
-            print(self.player_position_x, self.player_position_y)
-            print(self.last_position_x, self.last_position_y)
-            print(self.current_map)
+            #print(self.player_position_x, self.player_position_y)
+            #print(self.last_position_x, self.last_position_y)
+            #print(self.current_map)
 
     def intro_screen(self):
         intro = True
@@ -199,7 +209,6 @@ class game():
             dead = False
 
     def next_map(self):
-
         self.last_position_x[self.current_map] = int(self.player_position_x)
         self.last_position_y[self.current_map] = int(self.player_position_y)
     
@@ -215,15 +224,13 @@ class game():
     def previus_map(self):
         self.current_map -= 1
         
-        #self.player_position_x = self.last_position_x[self.current_map]
-        #self.player_position_y = self.last_position_y[self.current_map]
+        self.player_position_x = self.last_position_x[self.current_map]
+        self.player_position_y = self.last_position_y[self.current_map]
 
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
         #Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
         Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
-        
-
         
     def house_map(self):
         self.last_position_x[self.current_map] = int(self.player_position_x)
@@ -236,23 +243,23 @@ class game():
         self.player_position_x = 0
         self.player_position_y = 0
         
-    def house_map_back(self):
-        #self.player_position_x = self.last_position_x[self.current_map]
-        #self.player_position_y = self.last_position_y[self.current_map]
+    def house_map_back(self): 
+        self.player_position_x = self.last_position_x[self.current_map] + 8
+        self.player_position_y = self.last_position_y[self.current_map]
 
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
-        #Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
-        Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
+        Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map])
         
-        
+        print("house back")
+
     def dialoge(self, sprite):
         self.dialoge_state = True
         
         current_dialoge = 0
 
         dialoge_box = Dialoge_box(self, 0, 128)
-        dialoge_text = Text(16, 128, 240, 16, BLUE, RED, str(sprite.dialoge_list[current_dialoge]), 12)
+        dialoge_text = Text(16, 130, 240, 16, BLACK, RED, str(sprite.dialoge_list[current_dialoge]), 12)
 
         next_dialoge = UI_button(self, 240, 144, TILESIZE, TILESIZE, BLACK, '>', 32)
         previus_dialoge = UI_button(self, 0, 144, TILESIZE, TILESIZE, BLACK, '<', 32)
@@ -270,13 +277,23 @@ class game():
                 #print('prssed')
                 current_dialoge += 1
                 try:
-                    dialoge_text = Text(16, 128, 240, 16, BLUE, RED, str(sprite.dialoge_list[current_dialoge]), 12)
+                    dialoge_text = Text(16, 130, 240, 16, BLACK, RED, str(sprite.dialoge_list[current_dialoge]), 12)
                 except IndexError:
                     self.dialoge_state = False
                     dialoge_box.kill()
                     previus_dialoge.kill()
                     next_dialoge.kill()
-
+            
+            if previus_dialoge.is_pressed(self.mouse_pos, self.mouse_pressed):
+                current_dialoge -= 1
+                try:
+                    dialoge_text = Text(16, 130, 240, 16, BLACK, RED, str(sprite.dialoge_list[current_dialoge]), 12)
+                except IndexError:
+                    self.dialoge_state = False
+                    dialoge_box.kill()
+                    previus_dialoge.kill()
+                    next_dialoge.kill()
+                    
     def combat(self, sprite):
 
         attack_button = Button(10, 50, 100, 50, BLUE, BLACK, 'Attack', 32)
