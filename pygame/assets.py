@@ -14,7 +14,7 @@ class Spritesheet:
     def get_sprite(self, x, y, width, height):
         sprite = pg.Surface([width, height])
         sprite.blit(self.sheet, (0,0), (x, y, width, height))
-        sprite.set_colorkey(RED)
+        #sprite.set_colorkey(RED)
         return sprite
 
 class Sprite(pg.sprite.Sprite):
@@ -35,9 +35,19 @@ class Sprite(pg.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
 
-class Player(pg.sprite.Sprite): 
+class Entity(Sprite):
     def __init__(self, game, x, y):
-        super().__init__()
+        Sprite.__init__(self, game, x, y)
+
+        self.change_x = 0
+        self.change_y = 0
+        
+        self.facing = 'down'
+        self.animation_loop = 1        
+
+class Player(Entity): 
+    def __init__(self, game, x, y):
+        Entity.__init__(self, game, x, y)
         self.game = game
         self._layer = PLAYER_LAYER
         self.groups = self.game.all_sprites, self.game.player_sprites
@@ -47,12 +57,6 @@ class Player(pg.sprite.Sprite):
         self.y = y
         self.width = TILESIZE
         self.height = TILESIZE
-
-        self.change_x = 0
-        self.change_y = 0
-        
-        self.facing = 'down'
-        self.animation_loop = 1
 
         self.image = self.game.spritesheet.get_sprite(0, 64, self.width, self.height)
         
@@ -204,54 +208,15 @@ class Player(pg.sprite.Sprite):
                 if self.animation_loop >= 3:
                     self.animation_loop = 1
 
-class Villager(pg.sprite.Sprite):
+class Npc(Entity):
     def __init__(self, game, x, y):
-        super().__init__()
-        self.game = game
-        self._layer = GROUND_LAYER
-        self.groups = self.game.all_sprites, self.game.enemy_sprites
-        pg.sprite.Sprite.__init__(self, self.groups)
-
-        self.x = x * TILESIZE
-        self.y = y * TILESIZE
-        self.width = TILESIZE
-        self.height = TILESIZE
-        self.big_width = 96
-        self.big_height = 128
-
-        self.change_x = 0
-        self.change_y = 0
-        
+        Entity.__init__(self, game, x, y)
+        self._layer = NPC_LAYER
         self.facing = random.choice(['left', 'right', 'up', 'down'])
-        self.max_travel = random.randint(16, 64)
+        self.max_travel = 64
         self.animation_loop = 0
-        self.movement_loop = random.randint(16, 64)
-
-        self.image = self.game.spritesheet.get_sprite(32, 64, self.width, self.height)
+        self.movement_loop = 0
         
-        self.handled = False
-        self.dialoge_list = [villager_dialoge_1, villager_dialoge_2, villager_dialoge_3, villager_dialoge_4, villager_dialoge_5, villager_dialoge_6]
-
-        self.down_animation = [self.game.spritesheet.get_sprite(0, 128, self.width, self.height),
-                        self.game.spritesheet.get_sprite(16, 128, self.width, self.height),
-                        self.game.spritesheet.get_sprite(32, 128, self.width, self.height)]
-
-        self.right_animation = [self.game.spritesheet.get_sprite(0, 144, self.width, self.height),
-                        self.game.spritesheet.get_sprite(16, 144, self.width, self.height),
-                        self.game.spritesheet.get_sprite(32, 144, self.width, self.height)]
-
-        self.left_animation = [self.game.spritesheet.get_sprite(0, 160, self.width, self.height),
-                        self.game.spritesheet.get_sprite(16, 160, self.width, self.height),
-                        self.game.spritesheet.get_sprite(32, 160, self.width, self.height)]
-
-        self.up_animation = [self.game.spritesheet.get_sprite(0, 176, self.width, self.height),
-                        self.game.spritesheet.get_sprite(16, 176, self.width, self.height),
-                        self.game.spritesheet.get_sprite(32, 176, self.width, self.height)]
-
-        self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
-
     def update(self):
         
         self.movement()
@@ -310,14 +275,6 @@ class Villager(pg.sprite.Sprite):
                     self.rect.y = hits[0].rect.top - self.rect. height
                 if self.change_y < 0:
                     self.rect.y = hits[0].rect.bottom 
-
-    def collide_player(self):
-        hits = pg.sprite.spritecollide(self, self.game.player_sprites, False)
-        if hits and not self.handled:
-            self.game.dialoge(self)
-            self.handled = True
-        elif not hits:
-            self.handled = False
             
     def animate(self):
         if self.facing == "left":
@@ -360,15 +317,99 @@ class Villager(pg.sprite.Sprite):
                 if self.animation_loop >= 2:
                     self.animation_loop = 0
 
+class Door(Sprite):
+    def __init__(self, game, x, y):
+        Sprite.__init__(self, game, x, y)
+        self.game = game
+        self._layer = GROUND_LAYER
+        #.groups = self.game.all_sprites, self.game.door_sprites
+        #pg.sprite.Sprite.__init__(self, self.groups)
+    
+    def collide_doors(self):
+            hits = pg.sprite.spritecollide(self, self.game.player_sprites, True)
+            if hits:
+                for sprite in self.game.all_sprites:
+                    sprite.kill()
+                
+                self.game.next_map()
+                self.kill()
+
+class Door_Back(Sprite):
+    pass
+
+class Villager(Npc):
+    def __init__(self, game, x, y):
+        Npc.__init__(self, game, x, y)
+        self.game = game
+        self._layer = GROUND_LAYER
+        self.groups = self.game.all_sprites, self.game.npc_sprites
+        pg.sprite.Sprite.__init__(self, self.groups)
+
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE
+        self.height = TILESIZE
+        self.big_width = 96
+        self.big_height = 128
+
+        self.image = self.game.spritesheet.get_sprite(32, 64, self.width, self.height)
+        
+        self.handled = False
+        self.dialoge_list = [villager_dialoge_1, villager_dialoge_2, villager_dialoge_3, villager_dialoge_4, villager_dialoge_5, villager_dialoge_6]
+
+        self.down_animation = [self.game.spritesheet.get_sprite(0, 128, self.width, self.height),
+                        self.game.spritesheet.get_sprite(16, 128, self.width, self.height),
+                        self.game.spritesheet.get_sprite(32, 128, self.width, self.height)]
+
+        self.right_animation = [self.game.spritesheet.get_sprite(0, 144, self.width, self.height),
+                        self.game.spritesheet.get_sprite(16, 144, self.width, self.height),
+                        self.game.spritesheet.get_sprite(32, 144, self.width, self.height)]
+
+        self.left_animation = [self.game.spritesheet.get_sprite(0, 160, self.width, self.height),
+                        self.game.spritesheet.get_sprite(16, 160, self.width, self.height),
+                        self.game.spritesheet.get_sprite(32, 160, self.width, self.height)]
+
+        self.up_animation = [self.game.spritesheet.get_sprite(0, 176, self.width, self.height),
+                        self.game.spritesheet.get_sprite(16, 176, self.width, self.height),
+                        self.game.spritesheet.get_sprite(32, 176, self.width, self.height)]
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+    def update(self):
+        
+        self.movement()
+
+        self.collide_blocks(self.facing)
+        self.collide_player()
+        self.animate()
+
+        self.rect.x += self.change_x
+        self.collide_blocks('x')
+        self.rect.y += self.change_y
+        self.collide_blocks('y')
+
+        self.change_x = 0
+        self.change_y = 0
+
+
+    def collide_player(self):
+        hits = pg.sprite.spritecollide(self, self.game.player_sprites, False)
+        if hits and not self.handled:
+            self.game.dialoge(self)
+            self.handled = True
+        elif not hits:
+            self.handled = False
+
 class Village_elder(pg.sprite.Sprite):
     pass
 
-class Goblin(pg.sprite.Sprite):
+class Goblin(Npc):
     def __init__(self, game, x, y):
-        super().__init__()
+        Npc.__init__(self, game, x ,y)
         self.game = game
-        self._layer = GROUND_LAYER
-        self.groups = self.game.all_sprites, self.game.ground_sprites
+        self.groups = self.game.all_sprites, self.game.npc_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
 
         self.x = x * TILESIZE
@@ -398,6 +439,10 @@ class Goblin(pg.sprite.Sprite):
 
         self.image = self.game.spritesheet.get_sprite(32, 64, self.width, self.height)
         
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+
         self.down_animation = [self.game.spritesheet.get_sprite(48, 64, self.width, self.height),
                         self.game.spritesheet.get_sprite(64, 64, self.width, self.height),
                         self.game.spritesheet.get_sprite(80, 64, self.width, self.height)]
@@ -413,10 +458,6 @@ class Goblin(pg.sprite.Sprite):
         self.up_animation = [self.game.spritesheet.get_sprite(48, 112, self.width, self.height),
                         self.game.spritesheet.get_sprite(64, 112, self.width, self.height),
                         self.game.spritesheet.get_sprite(80, 112, self.width, self.height)]
-
-        self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
 
     def update(self):
         
@@ -434,49 +475,6 @@ class Goblin(pg.sprite.Sprite):
         self.change_x = 0
         self.change_y = 0
 
-    def movement(self):
-
-        if self.facing == 'left':
-            self.change_x -= ENEMY_SPEED
-            self.movement_loop -= 1
-            if self.movement_loop <= -self.max_travel:
-                self.facing = 'right'
-            
-        if self.facing == 'right':
-            self.change_x += ENEMY_SPEED
-            self.movement_loop += 1
-            if self.movement_loop >= self.max_travel:
-                self.facing = 'left'
-
-        if self.facing == 'up':
-            self.change_y -= ENEMY_SPEED
-            self.movement_loop -= 1
-            if self.movement_loop <= -self.max_travel:
-                self.facing = 'down'
-            
-        if self.facing == 'down':
-            self.change_y += ENEMY_SPEED
-            self.movement_loop += 1
-            if self.movement_loop >= self.max_travel:
-                self.facing = 'up'
-
-    def collide_blocks(self, direction):
-        if direction == 'x':
-            hits = pg.sprite.spritecollide(self, self.game.blocks, False)
-            if hits:
-                if self.change_x > 0:
-                    self.rect.x = hits[0].rect.left - self.rect.width
-                if self.change_x < 0:
-                    self.rect.x = hits[0].rect.right
-
-        if direction == 'y':
-            hits = pg.sprite.spritecollide(self, self.game.blocks, False)
-            if hits:
-                if self.change_y > 0:
-                    self.rect.y = hits[0].rect.top - self.rect. height
-                if self.change_y < 0:
-                    self.rect.y = hits[0].rect.bottom 
-
     def collide_player(self):
         hits = pg.sprite.spritecollide(self, self.game.player_sprites, False)
         if hits and not self.game.combat_state:
@@ -491,47 +489,6 @@ class Goblin(pg.sprite.Sprite):
         if self.health <= 0:
             self.game.combat_state = False
             self.kill()
-
-    def animate(self):
-        if self.facing == "left":
-            if self.change_x == 0:
-                self.image = self.game.spritesheet.get_sprite(32, 80, self.width, self.height)
-
-            else:
-                self.image = self.left_animation[math.floor(self.animation_loop)]
-                self.animation_loop += 0.1
-                if self.animation_loop >= 2:
-                    self.animation_loop = 0
-
-        if self.facing == "right":
-            if self.change_x == 0:
-                self.image = self.game.spritesheet.get_sprite(32, 80, self.width, self.height)
-
-            else:
-                self.image = self.right_animation[math.floor(self.animation_loop)]
-                self.animation_loop += 0.1
-                if self.animation_loop >= 2:
-                    self.animation_loop = 0
-
-        if self.facing == "up":
-            if self.change_y == 0:
-                self.image = self.game.spritesheet.get_sprite(32, 112, self.width, self.height)
-
-            else:
-                self.image = self.up_animation[math.floor(self.animation_loop)]
-                self.animation_loop += 0.1
-                if self.animation_loop >= 2:
-                    self.animation_loop = 0
-
-        if self.facing == "down":
-            if self.change_y == 0:
-                self.image = self.game.spritesheet.get_sprite(32, 112, self.width, self.height)
-
-            else:
-                self.image = self.down_animation[math.floor(self.animation_loop)]
-                self.animation_loop += 0.1
-                if self.animation_loop >= 2:
-                    self.animation_loop = 0
 
 class Health_posion:
     def __init__(self, game, x, y):
@@ -738,37 +695,28 @@ class Buch(pg.sprite.Sprite):
 
         self.image = self.game.spritesheet.get_sprite(16, 16, self.width, self.height)
 
-class Door(pg.sprite.Sprite):
+class Brick_door(Door):
     def __init__(self, game, x, y):
-        super().__init__()
+        Door.__init__(self, game, x, y)
         self.game = game
         self._layer = GROUND_LAYER
         self.groups = self.game.all_sprites, self.game.door_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
         
         self.x = x * TILESIZE
-        self.y = y * TILESIZE  - TILESIZE/2
+        self.y = y * TILESIZE
         self.width = TILESIZE
-        self.height = TILESIZE + TILESIZE
-        
-        self.image = self.game.spritesheet.get_sprite(0, 16, self.width, self.height)
+        self.height = TILESIZE + TILESIZE/2
+
+        self.image = self.game.spritesheet.get_sprite(0, 24, self.width, self.height)
         
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
-    
+
     def update(self):
         self.collide_doors()
 
-
-    def collide_doors(self):
-            hits = pg.sprite.spritecollide(self, self.game.player_sprites, True)
-            if hits:
-                for sprite in self.game.all_sprites:
-                    sprite.kill()
-                
-                self.game.next_map()
-                self.kill()
 
 class House(pg.sprite.Sprite):
     def __init__(self, game, x, y):

@@ -48,7 +48,7 @@ class game():
                 if tile == '4':
                     Buch(self, x, y)
                 if tile == '5':
-                    Door(self, x, y)
+                    Brick_door(self, x, y)
                 if tile == '6':
                     Door_Back(self, x, y)
                 if tile == '7':
@@ -102,7 +102,7 @@ class game():
         self.ground_sprites = pg.sprite.LayeredUpdates()
         self.blocks = pg.sprite.LayeredUpdates()
         self.player_sprites = pg.sprite.LayeredUpdates()
-        self.enemy_sprites = pg.sprite.LayeredUpdates()
+        self.npc_sprites = pg.sprite.LayeredUpdates()
         self.door_sprites = pg.sprite.LayeredUpdates()
         self.ui_sprites = pg.sprite.LayeredUpdates()
 
