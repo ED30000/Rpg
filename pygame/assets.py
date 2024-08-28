@@ -14,7 +14,7 @@ class Spritesheet:
     def get_sprite(self, x, y, width, height):
         sprite = pg.Surface([width, height])
         sprite.blit(self.sheet, (0,0), (x, y, width, height))
-        #sprite.set_colorkey(RED)
+        sprite.set_colorkey(RED)
         return sprite
 
 class Sprite(pg.sprite.Sprite):
@@ -44,6 +44,18 @@ class Entity(Sprite):
         
         self.facing = 'down'
         self.animation_loop = 1        
+
+class Item(Sprite):
+    def __init__(self, game, x, y):
+        Sprite.__init__(self, game, x, y)
+
+        self.name = 'name'
+
+    def collide_player(self):
+        hits = pg.sprite.spritecollide(self, self.game.player_sprites, False)
+        if hits:
+            self.game.inventory.append(self.name)
+            self.kill()
 
 class Player(Entity): 
     def __init__(self, game, x, y):
@@ -325,6 +337,11 @@ class Door(Sprite):
         #.groups = self.game.all_sprites, self.game.door_sprites
         #pg.sprite.Sprite.__init__(self, self.groups)
     
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE
+        self.height = TILESIZE + TILESIZE/2
+
     def collide_doors(self):
             hits = pg.sprite.spritecollide(self, self.game.player_sprites, True)
             if hits:
@@ -490,32 +507,18 @@ class Goblin(Npc):
             self.game.combat_state = False
             self.kill()
 
-class Health_posion:
+class Health_potion(Item):
     def __init__(self, game, x, y):
-        super().__init__()
-        self.game = game
+        Item.__init__(self, game, x, y)
         self._layer = GROUND_LAYER
-        self.groups = self.game.all_sprites, self.game.ground_sprites
+        self.groups = game.all_sprites, game.ground_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
-        
-        self.x = x * TILESIZE
-        self.y = y * TILESIZE
-        self.width = TILESIZE
-        self.height = TILESIZE
 
+        self.name = 'Health_poton'
         self.image = self.game.spritesheet.get_sprite(0, 48, self.width, self.height)
- 
-        self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
 
     def update(self):
         self.collide_player()
-
-    def collide_player(self):
-        hits = pg.sprite.spritecollide(self, self.game.player_sprites, False)
-        if hits:
-            self.kill()
 
 class Grass(Sprite):
    def __init__(self, game, x, y):
@@ -624,18 +627,13 @@ class Rock_wall(Sprite):
 
         self.image = self.game.spritesheet.get_sprite(32, 16, self.width, self.height)
 
-class Rock_door(pg.sprite.Sprite):
+class Rock_door(Door):
     def __init__(self, game, x, y):
-        super().__init__()
+        Door.__init__(self, game, x, y)
         self.game = game
         self._layer = GROUND_LAYER
         self.groups = self.game.all_sprites, self.game.door_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
-        
-        self.x = x * TILESIZE
-        self.y = y * TILESIZE  - TILESIZE/2
-        self.width = TILESIZE
-        self.height = TILESIZE + TILESIZE
         
         self.image = self.game.spritesheet.get_sprite(96, 16, self.width, self.height)
         
@@ -645,16 +643,6 @@ class Rock_door(pg.sprite.Sprite):
     
     def update(self):
         self.collide_doors()
-
-
-    def collide_doors(self):
-            hits = pg.sprite.spritecollide(self, self.game.player_sprites, True)
-            if hits:
-                for sprite in self.game.all_sprites:
-                    sprite.kill()
-                
-                self.game.next_map()
-                self.kill()
 
 class Rock_door_back(pg.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -702,11 +690,6 @@ class Brick_door(Door):
         self._layer = GROUND_LAYER
         self.groups = self.game.all_sprites, self.game.door_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
-        
-        self.x = x * TILESIZE
-        self.y = y * TILESIZE
-        self.width = TILESIZE
-        self.height = TILESIZE + TILESIZE/2
 
         self.image = self.game.spritesheet.get_sprite(0, 24, self.width, self.height)
         
@@ -716,7 +699,6 @@ class Brick_door(Door):
 
     def update(self):
         self.collide_doors()
-
 
 class House(pg.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -904,6 +886,7 @@ class Button:
         self.text = self.font.render(self.content, False, self.fg)
         self.text_rect = self.text.get_rect(center=(self.width/2, self.height/2))
         self.image.blit(self.text, self.text_rect)
+        self.image.set_colorkey(RED)
 
     def is_pressed(self, pos, pressed):
         if self.rect.collidepoint(pos):
@@ -919,7 +902,7 @@ class Dialoge_box(pg.sprite.Sprite):
         super().__init__()
         self.game = game
         self._layer = GROUND_LAYER
-        self.groups = self.game.all_sprites, self.game.ground_sprites
+        self.groups = self.game.all_sprites, self.game.ui_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
         
         self.x = x

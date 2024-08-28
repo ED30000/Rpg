@@ -84,6 +84,9 @@ class game():
                     Villager(self, x, y)
                 if tile == '2':
                     Goblin(self, x, y)
+                if tile == '3':
+                    Health_potion(self, x, y)
+
 
                 x += 1
             y += 1
@@ -105,8 +108,10 @@ class game():
         self.npc_sprites = pg.sprite.LayeredUpdates()
         self.door_sprites = pg.sprite.LayeredUpdates()
         self.ui_sprites = pg.sprite.LayeredUpdates()
+        self.item_sprites = pg.sprite.LayeredUpdates()
 
         self.create_tilemap(maps_list[first_map])
+        self.spawn_npc(map1_spawn_list)
         Player(self, player_next_spawns_x[first_map], player_next_spawns_y[first_map])
         #self.create_tilemap(map4_list)
         #print("creating tile map")
@@ -153,6 +158,7 @@ class game():
             #print(self.player_position_x, self.player_position_y)
             #print(self.last_position_x, self.last_position_y)
             #print(self.current_map)
+            print(self.inventory)
 
     def intro_screen(self):
         intro = True
@@ -209,8 +215,8 @@ class game():
             dead = False
 
     def next_map(self):
-        self.last_position_x[self.current_map] = int(self.player_position_x)
-        self.last_position_y[self.current_map] = int(self.player_position_y)
+        player_previus_spawns_x[self.current_map] = self.player_position_x
+        player_previus_spawns_y[self.current_map] = self.player_position_y
     
         self.current_map += 1
         
@@ -224,17 +230,16 @@ class game():
     def previus_map(self):
         self.current_map -= 1
         
-        self.player_position_x = self.last_position_x[self.current_map]
-        self.player_position_y = self.last_position_y[self.current_map]
+        self.player_position_x = player_previus_spawns_x[self.current_map]
+        self.player_position_y = player_previus_spawns_y[self.current_map]
 
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
-        #Player(self, player_next_spawns_x[self.current_map], player_next_spawns_y[self.current_map])
-        Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map] + 16)
-        
+        Player(self, player_next_spawns_x[self.current_map] + self.player_position_x, player_next_spawns_y[self.current_map] + self.player_position_y)     
+           
     def house_map(self):
-        self.last_position_x[self.current_map] = int(self.player_position_x)
-        self.last_position_y[self.current_map] = int(self.player_position_y)
+        player_previus_spawns_x[self.current_map] = self.player_position_x
+        player_previus_spawns_y[self.current_map] = self.player_position_y
         
         self.create_tilemap(house_list)
         self.spawn_npc(house_spawn_list)
@@ -244,12 +249,12 @@ class game():
         self.player_position_y = 0
         
     def house_map_back(self): 
-        self.player_position_x = self.last_position_x[self.current_map] + 8
-        self.player_position_y = self.last_position_y[self.current_map]
+        self.player_position_x = player_previus_spawns_x[self.current_map]
+        self.player_position_y = player_previus_spawns_y[self.current_map] + player_spawn_offset
 
         self.create_tilemap(maps_list[self.current_map])
         self.spawn_npc(maps_spawn_list[self.current_map])
-        Player(self, self.last_position_x[self.current_map] + player_next_spawns_x[self.current_map], self.last_position_y[self.current_map] + player_next_spawns_y[self.current_map])
+        Player(self, player_next_spawns_x[self.current_map] + self.player_position_x, player_next_spawns_y[self.current_map] + self.player_position_y)     
         
         print("house back")
 
@@ -296,7 +301,11 @@ class game():
                     
     def combat(self, sprite):
 
-        attack_button = Button(10, 50, 100, 50, BLUE, BLACK, 'Attack', 32)
+        health_potions = 0
+
+        heal_button = Button(100, 128, 100, 32, BLUE, RED, 'Heal', 32)
+        attack_button = Button(10, 128, 100, 32, BLUE, RED, 'Attack', 32)
+        dialoge_box = Dialoge_box(self, 0, 128)
 
         health = Text(0, 0, 32, 16, BLUE, RED, str(self.health), 16)
         enemy_health = Text(144, 0, 32, 16, BLUE, RED, str(sprite.health), 16)
@@ -304,7 +313,9 @@ class game():
         while self.combat_state and self.running:
             self.events()
             self.screen.fill(BLACK)
+            self.screen.blit(dialoge_box.image, dialoge_box.rect)
             self.screen.blit(sprite.big_image, sprite.big_image_position)
+            self.screen.blit(heal_button.image, heal_button.rect)
             self.screen.blit(attack_button.image, attack_button.rect)
             self.screen.blit(enemy_health.image, enemy_health.rect)
             self.screen.blit(health.image, health.rect)
@@ -320,8 +331,20 @@ class game():
                 health = Text(0, 0, 32, 16, BLUE, RED, str(self.health), 16)
                 enemy_health = Text(144, 0, 32, 16, BLUE, RED, str(sprite.health), 16)
 
+            if heal_button.is_pressed(self.mouse_pos, self.mouse_pressed) and self.health < self.max_health:
+                try:
+                    self.inventory.remove('Health_poton')
+                    self.health += 100
+                    if self.health >= self.max_health:
+                        self.health = self.max_health
+                    health = Text(0, 0, 32, 16, BLUE, RED, str(self.health), 16)
+                except ValueError:
+                    pass
+
             if sprite.health <= 0.0:
                 sprite.die()
+                for i in self.ui_sprites:
+                    i.kill()
             if self.health <= 0:
                 self.combat_state = False
                 self.playing = False
